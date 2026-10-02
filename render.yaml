@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: btc-volumeprofile-orderflow
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python start.py
+    plan: free
+    envVars:
+      - key: PORT
+        value: 10000

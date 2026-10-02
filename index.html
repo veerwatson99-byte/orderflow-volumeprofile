@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BTC Order Flow & Volume Profile Terminal | Institutional Grade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Navigation Header -->
+    <header class="top-header">
+      <div class="header-left">
+        <div class="brand-badge">
+          <span class="brand-icon">⚡</span>
+          <div class="brand-text">
+            <span class="brand-title">VOLUMETRIC<span class="accent-text">CORE</span></span>
+            <span class="brand-sub">BTC Order Flow + Volume Profile V1</span>
+          </div>
+        </div>
+
+        <div class="symbol-selector-wrap">
+          <div class="symbol-pill">
+            <span class="crypto-icon">₿</span>
+            <span class="symbol-name">BTCUSDT</span>
+            <span class="symbol-tag">PERP</span>
+          </div>
+          <div class="price-live-box">
+            <span class="live-price" id="topLivePrice">$67,240.50</span>
+            <span class="price-change-badge pos" id="topPriceChange">+2.42%</span>
+          </div>
+        </div>
+
+        <div class="timeframe-group">
+          <button class="tf-btn" data-tf="1m">1m</button>
+          <button class="tf-btn active" data-tf="5m">5m</button>
+          <button class="tf-btn" data-tf="15m">15m</button>
+        </div>
+      </div>
+
+      <div class="header-center">
+        <!-- Live Telemetry Quick Pills -->
+        <div class="telemetry-pill">
+          <span class="pill-label">SESSION DELTA</span>
+          <span class="pill-val pos" id="hdrSessionDelta">--</span>
+        </div>
+        <div class="telemetry-pill">
+          <span class="pill-label">POC</span>
+          <span class="pill-val poc" id="hdrPOC">--</span>
+        </div>
+        <div class="telemetry-pill">
+          <span class="pill-label">VALUE AREA</span>
+          <span class="pill-val" id="hdrValueArea">--</span>
+        </div>
+        <div class="telemetry-pill setup-pill" id="hdrSetupStatus">
+          <span class="status-dot green"></span>
+          <span class="pill-label">SETUP</span>
+          <span class="pill-val highlight" id="hdrSetupText">SCANNING SETUP...</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Feed Mode Switcher -->
+        <div class="data-mode-select">
+          <label for="dataFeedSelect" class="feed-label">FEED:</label>
+          <select id="dataFeedSelect" class="custom-select">
+            <option value="delta_india_btc" selected>Delta Exchange India (Live BTCUSD Perpetual - Full History)</option>
+            <option value="sim_val_reclaim">Demo 1: VAL Seller Absorption & Long Reclaim</option>
+            <option value="sim_vah_rejection">Demo 2: VAH Buyer Absorption & Short Rejection</option>
+            <option value="sim_breakout">Demo 3: VAH Breakout Acceptance & Retest</option>
+            <option value="live_binance">Binance Futures (Global WSS)</option>
+          </select>
+        </div>
+
+        <button class="icon-action-btn" id="btnDecisionTree" title="View Decision Tree Logic">
+          <span class="btn-icon">🌳</span>
+          <span class="btn-text">Decision Tree</span>
+        </button>
+
+        <button class="icon-action-btn highlight" id="btnBacktest" title="Run Strategy Backtest">
+          <span class="btn-icon">📊</span>
+          <span class="btn-text">Backtester</span>
+        </button>
+
+        <div class="conn-status" id="connStatus" title="Stream Status">
+          <span class="conn-dot live"></span>
+          <span class="conn-text" id="connText">SIM ACTIVE</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace Grid -->
+    <main class="main-workspace">
+      <!-- Left Chart & Subpanel Section -->
+      <section class="chart-section">
+        <!-- Chart Controls Toolbar -->
+        <div class="chart-toolbar">
+          <div class="chart-toolbar-left">
+            <div class="chart-mode-toggles">
+              <button class="tool-btn active" id="btnToggleProfile" title="Toggle Volume Profile">
+                <span class="icon">📊</span> Volume Profile
+              </button>
+              <button class="tool-btn active" id="btnToggleFootprint" title="Toggle Footprint / Order Flow Clusters">
+                <span class="icon">👣</span> Order Flow Clusters
+              </button>
+              <button class="tool-btn" id="btnToggleSignals" title="Toggle Strategic Signals">
+                <span class="icon">🎯</span> Strategy Signals
+              </button>
+              <button class="tool-btn" id="btnToggleCVD" title="Toggle Cumulative Volume Delta">
+                <span class="icon">📈</span> CVD Line
+              </button>
+              <button class="tool-btn active" id="btnToggleSessions" title="Toggle Market Sessions (Asia / London / NY)">
+                <span class="icon">🌐</span> Market Sessions
+              </button>
+            </div>
+          </div>
+
+          <div class="chart-toolbar-right">
+            <!-- Legend / Reference Guide -->
+            <div class="chart-legend">
+              <span class="leg-item"><span class="leg-color session-asia"></span> Asia</span>
+              <span class="leg-item"><span class="leg-color session-london"></span> London</span>
+              <span class="leg-item"><span class="leg-color session-ny"></span> New York</span>
+              <span class="leg-item"><span class="leg-color vah"></span> VAH (<span id="legVAH">--</span>)</span>
+              <span class="leg-item"><span class="leg-color poc"></span> POC (<span id="legPOC">--</span>)</span>
+              <span class="leg-item"><span class="leg-color val"></span> VAL (<span id="legVAL">--</span>)</span>
+            </div>
+            <button class="reset-view-btn" id="btnResetView" title="Reset Chart Zoom/Pan">Reset View</button>
+          </div>
+        </div>
+
+        <!-- TradingView Chart Container Wrapper -->
+        <div class="tv-chart-wrapper" id="tvChartWrapper">
+          <!-- Main Candlestick Chart Container -->
+          <div id="tvMainChart" class="tv-main-container"></div>
+          <!-- Market Sessions Background Tint Canvas Overlay -->
+          <canvas id="tvSessionCanvas" class="tv-session-overlay"></canvas>
+          <!-- Left Pinned Volume Profile Overlay -->
+          <canvas id="tvProfileCanvas" class="tv-profile-overlay"></canvas>
+          <!-- Order Flow & Volume Sub-chart Toolbar -->
+          <div class="flow-pane-toolbar" id="flowPaneToolbar">
+            <div class="fpt-left">
+              <span class="fpt-title">📊 ORDER FLOW & VOLUME</span>
+              <div class="fpt-metrics" id="flowPaneMetrics">
+                <span class="fpt-badge">VOL: <b id="fptVol">--</b></span>
+                <span class="fpt-badge buy">BUY: <b id="fptBuy">--</b></span>
+                <span class="fpt-badge sell">SELL: <b id="fptSell">--</b></span>
+                <span class="fpt-badge delta">DELTA: <b id="fptDelta">--</b></span>
+                <span class="fpt-badge cvd">CVD: <b id="fptCVD">--</b></span>
+              </div>
+            </div>
+            <div class="fpt-right">
+              <button class="fpt-chip active" id="btnPaneToggleVol" title="Toggle Total Volume Bars">Vol</button>
+              <button class="fpt-chip active" id="btnPaneToggleDelta" title="Toggle Order Flow Delta">Delta</button>
+              <button class="fpt-chip" id="btnPaneToggleCVD" title="Toggle Cumulative Volume Delta">CVD</button>
+            </div>
+          </div>
+          <!-- Order Flow / Delta Sub-chart Container -->
+          <div id="tvFlowChart" class="tv-flow-container"></div>
+
+          <!-- Interactive Tooltip Overlay -->
+          <div class="chart-hover-hud" id="chartHoverHUD" style="display: none;">
+            <div class="hud-header">
+              <span class="hud-time" id="hudTime">--</span>
+              <span class="hud-badge" id="hudBadge">BAR METRICS</span>
+            </div>
+            <div class="hud-grid">
+              <div class="hud-col">
+                <div class="hud-row"><span>Open:</span><b id="hudOpen">--</b></div>
+                <div class="hud-row"><span>High:</span><b id="hudHigh">--</b></div>
+                <div class="hud-row"><span>Low:</span><b id="hudLow">--</b></div>
+                <div class="hud-row"><span>Close:</span><b id="hudClose">--</b></div>
+              </div>
+              <div class="hud-col">
+                <div class="hud-row"><span>Total Vol:</span><b id="hudVol">--</b></div>
+                <div class="hud-row"><span>Delta:</span><b id="hudDelta" class="pos">--</b></div>
+                <div class="hud-row"><span>Agg Buy:</span><b id="hudBuy">--</b></div>
+                <div class="hud-row"><span>Agg Sell:</span><b id="hudSell">--</b></div>
+              </div>
+            </div>
+            <div class="hud-footer" id="hudFlowState">
+              <span>Order Flow State:</span> <strong id="hudStateText">Neutral</strong>
+            </div>
+          </div>
+
+          <!-- Active Signal Banner Floating Callout -->
+          <div class="active-signal-banner" id="activeSignalBanner" style="display: none;">
+            <div class="banner-badge" id="bannerBadge">BUY SIGNAL</div>
+            <div class="banner-content">
+              <div class="banner-title" id="bannerTitle">**BUY SIGNAL: Price retests Volume Profile VAL + Order Flow Buying Imbalance**</div>
+              <div class="banner-desc" id="bannerDesc">Seller absorption confirmed at $66,710 with positive delta flip (+1,583 BTC). Reclaiming Value Area.</div>
+            </div>
+            <button class="banner-close" id="btnCloseBanner">✕</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Strategy HUD & Order Flow Sidebar -->
+      <aside class="strategy-sidebar">
+        <!-- Tab Navigation for Sidebar -->
+        <div class="sidebar-tabs">
+          <button class="sb-tab active" data-tab="telemetry">Live Flow</button>
+          <button class="sb-tab" data-tab="decision">Decision Tree</button>
+          <button class="sb-tab" data-tab="risk">Risk Engine</button>
+        </div>
+
+        <div class="sidebar-scrollable-content">
+          <!-- 1. LIVE TELEMETRY TAB -->
+          <div class="sb-tab-pane active" id="paneTelemetry">
+            <!-- Box A: Volume Profile (WHERE) -->
+            <div class="glass-panel profile-panel">
+              <div class="panel-header">
+                <div class="panel-title-wrap">
+                  <span class="p-icon">📍</span>
+                  <span class="p-title">VOLUME PROFILE</span>
+                  <span class="p-subtitle">WHERE (Location)</span>
+                </div>
+                <span class="panel-badge">70% VA</span>
+              </div>
+
+              <div class="levels-display-card">
+                <div class="level-row vah-row">
+                  <div class="lvl-label">
+                    <span class="lvl-color-dot vah-dot"></span>
+                    <span>VAH (Value Area High)</span>
+                  </div>
+                  <div class="lvl-price" id="sideVAH">--</div>
+                  <div class="lvl-role">Reversal / Resistance</div>
+                </div>
+
+                <div class="level-row poc-row">
+                  <div class="lvl-label">
+                    <span class="lvl-color-dot poc-dot"></span>
+                    <span>POC (Point of Control)</span>
+                  </div>
+                  <div class="lvl-price" id="sidePOC">--</div>
+                  <div class="lvl-role">Highest Volume Node</div>
+                </div>
+
+                <div class="level-row val-row">
+                  <div class="lvl-label">
+                    <span class="lvl-color-dot val-dot"></span>
+                    <span>VAL (Value Area Low)</span>
+                  </div>
+                  <div class="lvl-price" id="sideVAL">--</div>
+                  <div class="lvl-role">Reversal / Support</div>
+                </div>
+              </div>
+
+              <div class="nodes-mini-grid">
+                <div class="node-item">
+                  <span class="node-label">HVN 1</span>
+                  <span class="node-val" id="sideHVN">--</span>
+                </div>
+                <div class="node-item">
+                  <span class="node-label">LVN (Speed Pocket)</span>
+                  <span class="node-val" id="sideLVN">--</span>
+                </div>
+                <div class="node-item">
+                  <span class="node-label">Profile Vol</span>
+                  <span class="node-val" id="sideTotalVol">--</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Box B: Order Flow (WHAT IS HAPPENING THERE) -->
+            <div class="glass-panel orderflow-panel">
+              <div class="panel-header">
+                <div class="panel-title-wrap">
+                  <span class="p-icon">⚡</span>
+                  <span class="p-title">ORDER FLOW</span>
+                  <span class="p-subtitle">WHAT IS HAPPENING THERE (Trigger)</span>
+                </div>
+                <span class="panel-badge live" id="sideFlowPulse">FLOW ACTIVE</span>
+              </div>
+
+              <div class="flow-metrics-box">
+                <div class="flow-metric-main">
+                  <span class="f-label">Bar Delta</span>
+                  <div class="f-val-large pos" id="sideDelta">+1,635 BTC</div>
+                  <span class="f-sub" id="sideDeltaPercent">+34.8% net aggression</span>
+                </div>
+
+                <div class="vol-ratio-card">
+                  <div class="ratio-labels">
+                    <span class="buy-lbl">Buy: <b id="sideBuyVol">18,420 BTC</b></span>
+                    <span class="sell-lbl">Sell: <b id="sideSellVol">23,240 BTC</b></span>
+                  </div>
+                  <div class="ratio-progress-bar">
+                    <div class="prog-buy" id="sideBuyProg" style="width: 55%;"></div>
+                    <div class="prog-sell" id="sideSellProg" style="width: 45%;"></div>
+                  </div>
+                </div>
+
+                <div class="flow-status-chips">
+                  <div class="flow-chip">
+                    <span class="chip-title">Aggressive Imbalance</span>
+                    <span class="chip-val pos" id="sideImbalance">3.2x Ask Stack</span>
+                  </div>
+                  <div class="flow-chip">
+                    <span class="chip-title">Absorption Status</span>
+                    <span class="chip-val highlight" id="sideAbsorption">SELLING ABSORBED</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- State & Active Setup Box -->
+              <div class="system-status-box">
+                <div class="sys-row">
+                  <span class="s-label">Market State:</span>
+                  <span class="s-val badge-neutral" id="sysMarketState">SELLER ABSORPTION AT VAL</span>
+                </div>
+                <div class="sys-row">
+                  <span class="s-label">Active Setup:</span>
+                  <span class="s-val badge-long" id="sysActiveSetup">LONG RECLAIM TRIGGERED</span>
+                </div>
+              </div>
+
+              <div class="system-summary-quote">
+                "Use Volume Profile to identify the price, then Order Flow to determine whether that price is being rejected or accepted."
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. DECISION TREE TAB -->
+          <div class="sb-tab-pane" id="paneDecision">
+            <div class="glass-panel tree-panel">
+              <div class="panel-header">
+                <div class="panel-title-wrap">
+                  <span class="p-icon">🧭</span>
+                  <span class="p-title">EXECUTION DECISION TREE</span>
+                </div>
+              </div>
+
+              <div class="decision-tree-container">
+                <!-- Node 1: Price Approach -->
+                <div class="dt-node" id="dtNodeLocation">
+                  <div class="dt-tag">STEP 1: LOCATION</div>
+                  <div class="dt-text">Price reaches Profile Level (VAH / VAL / LVN)</div>
+                  <div class="dt-status" id="dtStatLocation">Scanning Market State...</div>
+                </div>
+
+                <div class="dt-branch-lines">
+                  <div class="branch-left">REJECTION PATH</div>
+                  <div class="branch-right">ACCEPTANCE PATH</div>
+                </div>
+
+                <div class="dt-cols">
+                  <!-- Rejection Column -->
+                  <div class="dt-col-box" id="dtColRejection">
+                    <div class="dt-col-header">A. Reversal at Extremes</div>
+                    <div class="dt-step" id="dtStepAbsorption">
+                      <span class="step-num">1</span>
+                      <span class="step-desc">Aggression absorbed without displacement</span>
+                    </div>
+                    <div class="dt-step" id="dtStepFlip">
+                      <span class="step-num">2</span>
+                      <span class="step-desc">Delta flips to reversal direction</span>
+                    </div>
+                    <div class="dt-step" id="dtStepReclaim">
+                      <span class="step-num">3</span>
+                      <span class="step-desc">Price reclaims/loses level back inside VA</span>
+                    </div>
+                    <div class="dt-result buy" id="dtResultRejection">
+                      ACTION: EXECUTE REVERSAL (1:2+ RR)
+                    </div>
+                  </div>
+
+                  <!-- Acceptance Column -->
+                  <div class="dt-col-box" id="dtColAcceptance">
+                    <div class="dt-col-header">B. Breakout Continuation</div>
+                    <div class="dt-step" id="dtStepBreak">
+                      <span class="step-num">1</span>
+                      <span class="step-desc">Strong directional delta breaks VAH/VAL</span>
+                    </div>
+                    <div class="dt-step" id="dtStepHold">
+                      <span class="step-num">2</span>
+                      <span class="step-desc">Price holds outside & prints acceptance</span>
+                    </div>
+                    <div class="dt-step" id="dtStepRetest">
+                      <span class="step-num">3</span>
+                      <span class="step-desc">Retest of broken level holds with flow</span>
+                    </div>
+                    <div class="dt-result breakout" id="dtResultAcceptance">
+                      ACTION: BUY/SELL BREAKOUT RETEST
+                    </div>
+                  </div>
+                </div>
+
+                <div class="dt-node no-trade" id="dtNodeNoTrade">
+                  <div class="dt-tag">RULE #1</div>
+                  <div class="dt-text">If Absorption OR Order Flow Trigger is Missing: <strong>NO TRADE</strong></div>
+                  <div class="dt-caption">Most moves between levels offer no asymmetric edge. Patience is alpha.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. RISK ENGINE TAB -->
+          <div class="sb-tab-pane" id="paneRisk">
+            <div class="glass-panel risk-panel">
+              <div class="panel-header">
+                <div class="panel-title-wrap">
+                  <span class="p-icon">🛡️</span>
+                  <span class="p-title">RISK & POSITION SIZING</span>
+                  <span class="p-subtitle">Strict 0.5% Capital Preservation</span>
+                </div>
+              </div>
+
+              <div class="risk-form">
+                <div class="form-row">
+                  <label>Account Equity ($):</label>
+                  <input type="number" id="inpAccountEquity" class="calc-input" value="10000" step="500">
+                </div>
+                <div class="form-row">
+                  <label>Risk Per Trade (%):</label>
+                  <div class="risk-fixed-pill">0.50% FIXED</div>
+                </div>
+                <div class="form-row">
+                  <label>Max Capital at Risk ($):</label>
+                  <span class="calc-res" id="calcDollarRisk">$50.00</span>
+                </div>
+
+                <hr class="divider">
+
+                <div class="form-row">
+                  <label>Proposed Entry ($):</label>
+                  <input type="number" id="inpEntryPrice" class="calc-input" value="66750">
+                </div>
+                <div class="form-row">
+                  <label>Stop Loss (Rejection Extreme):</label>
+                  <input type="number" id="inpStopPrice" class="calc-input" value="66620">
+                </div>
+                <div class="form-row">
+                  <label>Target 1 (POC / Next HVN):</label>
+                  <input type="number" id="inpTargetPrice" class="calc-input" value="67080">
+                </div>
+
+                <div class="rr-calculated-box" id="rrBox">
+                  <div class="rr-metric">
+                    <span class="rr-label">Planned R:R</span>
+                    <span class="rr-value pos" id="calcRR">1 : 2.54</span>
+                  </div>
+                  <div class="rr-status valid" id="rrStatus">
+                    ✓ Valid (> 1:2.0 Minimum)
+                  </div>
+                </div>
+
+                <div class="size-output-card">
+                  <div class="so-row">
+                    <span>Position Size:</span>
+                    <strong id="calcPosBTC">0.384 BTC</strong>
+                  </div>
+                  <div class="so-row">
+                    <span>Notional Value:</span>
+                    <strong id="calcNotional">$25,632</strong>
+                  </div>
+                  <div class="so-row">
+                    <span>Est. Profit (TP1):</span>
+                    <strong class="pos" id="calcEstProfit">+$126.72</strong>
+                  </div>
+                </div>
+
+                <div class="circuit-breaker-card">
+                  <div class="cb-title">🚨 Session Circuit Breaker</div>
+                  <div class="cb-desc">2 consecutive losses = <strong>Cease trading for session</strong>. No revenge trading. No averaging down.</div>
+                  <div class="cb-meter">
+                    <div class="cb-slot ok" id="cbLoss1">Loss 1: Clean</div>
+                    <div class="cb-slot ok" id="cbLoss2">Loss 2: Clean</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Strategy Backtester Modal Window -->
+    <div class="modal-backdrop" id="backtestModal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="m-title-wrap">
+            <span class="m-icon">📊</span>
+            <div>
+              <h3>BTC Volume Profile + Order Flow V1 Backtest Engine</h3>
+              <p>Historical execution test on BTCUSDT with 0.04% maker/taker fees + 1 tick slippage</p>
+            </div>
+          </div>
+          <button class="modal-close-btn" id="btnCloseBacktest">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="bt-summary-cards">
+            <div class="bt-card">
+              <span class="btc-label">TOTAL TRADES</span>
+              <span class="btc-val" id="btTotalTrades">48</span>
+              <span class="btc-sub">30-Day Sample</span>
+            </div>
+            <div class="bt-card">
+              <span class="btc-label">WIN RATE</span>
+              <span class="btc-val pos" id="btWinRate">66.7%</span>
+              <span class="btc-sub">32 Wins / 16 Losses</span>
+            </div>
+            <div class="bt-card">
+              <span class="btc-label">PROFIT FACTOR</span>
+              <span class="btc-val pos" id="btProfitFactor">2.38</span>
+              <span class="btc-sub">Gross Win / Gross Loss</span>
+            </div>
+            <div class="bt-card">
+              <span class="btc-label">NET PROFIT (PnL)</span>
+              <span class="btc-val pos" id="btNetProfit">+$1,482.50</span>
+              <span class="btc-sub">+14.82% on $10k equity</span>
+            </div>
+            <div class="bt-card">
+              <span class="btc-label">MAX DRAWDOWN</span>
+              <span class="btc-val neg" id="btMaxDD">-2.10%</span>
+              <span class="btc-sub">Max Consecutive Losses: 2</span>
+            </div>
+          </div>
+
+          <!-- Equity Curve Canvas -->
+          <div class="bt-chart-box">
+            <div class="bt-chart-header">
+              <span>Account Equity Growth (Compounded 0.5% Risk)</span>
+              <div class="bt-toggles">
+                <span class="tag-badge green">V1 Rules Only</span>
+                <span class="tag-badge blue">Slippage & Fees Included</span>
+              </div>
+            </div>
+            <canvas id="equityCanvas" width="900" height="200"></canvas>
+          </div>
+
+          <!-- Trade Breakdown Table -->
+          <div class="bt-table-wrapper">
+            <table class="bt-table">
+              <thead>
+                <tr>
+                  <th>Trade #</th>
+                  <th>Date & Time</th>
+                  <th>Setup Type</th>
+                  <th>Trigger Level</th>
+                  <th>Delta / Imbalance</th>
+                  <th>Entry</th>
+                  <th>Exit</th>
+                  <th>R:R</th>
+                  <th>Net PnL ($)</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+              <tbody id="btTableBody">
+                <!-- Dynamically populated by backtester.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <div class="mf-left">
+            <span>Frozen V1 Rules: Absorption required. No indicators. Pure Profile + Flow.</span>
+          </div>
+          <button class="primary-btn" id="btnRerunBacktest">Re-run Test Simulation</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Strategy Decision Tree Interactive Modal -->
+    <div class="modal-backdrop" id="decisionModal">
+      <div class="modal-card wide">
+        <div class="modal-header">
+          <div class="m-title-wrap">
+            <span class="m-icon">🧭</span>
+            <div>
+              <h3>Complete Strategy Decision Architecture</h3>
+              <p>Strict mathematical binary logic for every trading opportunity</p>
+            </div>
+          </div>
+          <button class="modal-close-btn" id="btnCloseDecision">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="visual-decision-diagram">
+            <div class="vdd-level vdd-top">
+              <div class="vdd-card root">
+                <h4>STEP 1: LOCATION (Volume Profile)</h4>
+                <p>Does price touch or interact with a key Volume Profile level?</p>
+                <div class="level-pills-row">
+                  <span class="pill-vah">VAH (Value Area High)</span>
+                  <span class="pill-poc">POC (Point of Control)</span>
+                  <span class="pill-val">VAL (Value Area Low)</span>
+                  <span class="pill-lvn">LVN (Low Volume Node)</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="vdd-fork">
+              <div class="fork-branch-lbl">REJECTION PATH (Reversal at Extreme)</div>
+              <div class="fork-branch-lbl">ACCEPTANCE PATH (Breakout & Hold)</div>
+            </div>
+
+            <div class="vdd-columns">
+              <!-- Rejection Card -->
+              <div class="vdd-col">
+                <div class="vdd-card sub">
+                  <div class="sub-header long-accent">Family 1: REJECTION (Mean Reversion to POC)</div>
+                  
+                  <div class="sub-step">
+                    <b>1. Aggression Influx</b>
+                    <p>Heavy aggression hits the level (large red delta at VAL, or large green delta at VAH).</p>
+                  </div>
+
+                  <div class="sub-step">
+                    <b>2. Absorption Check</b>
+                    <p>Price halts or fails to displace proportionally. Passive limit orders absorb the aggressors.</p>
+                  </div>
+
+                  <div class="sub-step">
+                    <b>3. Delta Reversal & Reclaim</b>
+                    <p>Aggressive flow exhausts. Counter-delta emerges and price reclaims the value boundary.</p>
+                  </div>
+
+                  <div class="sub-summary buy-box">
+                    <strong>EXECUTION:</strong> Long at VAL reclaim / Short at VAH loss.<br>
+                    <strong>SL:</strong> Beyond rejection wick extreme.<br>
+                    <strong>TP1:</strong> POC (High Volume Anchor).<br>
+                    <strong>TP2:</strong> Opposite Value Area High/Low.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Acceptance Card -->
+              <div class="vdd-col">
+                <div class="vdd-card sub">
+                  <div class="sub-header short-accent">Family 2: ACCEPTANCE (Trend Continuation)</div>
+                  
+                  <div class="sub-step">
+                    <b>1. High Velocity Break</b>
+                    <p>Price thrusts across VAH or VAL into an LVN (thin liquidity pocket) with strong positive/negative delta.</p>
+                  </div>
+
+                  <div class="sub-step">
+                    <b>2. Value Acceptance Outside</b>
+                    <p>Candle closes and accepts outside the previous value area without immediate sharp rejection back inside.</p>
+                  </div>
+
+                  <div class="sub-step">
+                    <b>3. Clean Retest with Flow Defense</b>
+                    <p>Price pulls back to retest the broken boundary from the outside, supported by persistent directional delta.</p>
+                  </div>
+
+                  <div class="sub-summary breakout-box">
+                    <strong>EXECUTION:</strong> Enter on retest confirmation.<br>
+                    <strong>SL:</strong> Back inside the value boundary.<br>
+                    <strong>TP:</strong> Next higher/lower session HVN or liquidity pool.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="vdd-footer-rule">
+              <span class="warning-icon">⛔</span>
+              <div>
+                <strong>HARD RULE:</strong> Profile alone never creates a trade. Order flow alone never creates a trade. If both do not align simultaneously with absorption/acceptance, <strong>NO TRADE IS TAKEN</strong>.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Application Logic Scripts -->
+  <script src="chart/lightweight-charts.standalone.production.js"></script>
+  <script src="chart/tvChart.js"></script>
+  <script src="engine/volumeProfile.js"></script>
+  <script src="engine/orderFlow.js"></script>
+  <script src="engine/strategyEngine.js"></script>
+  <script src="engine/backtester.js"></script>
+  <script src="engine/dataFeed.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
